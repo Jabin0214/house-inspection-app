@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import { dbConnect } from '@/lib/mongodb';
-import InspectionTask from '@/lib/models/InspectionTask';
+import { InspectionTaskModel } from '@/lib/models/InspectionTask';
 import { sendEmail } from '@/lib/email';
 
 export async function POST(request: Request) {
     try {
         await dbConnect();
         const { taskId } = await request.json();
-        const task = await InspectionTask.findOne({ id: taskId });
+        const task = await InspectionTaskModel.findOne({ id: taskId });
         if (!task) {
             return NextResponse.json({ success: false, error: '未找到该任务' }, { status: 404 });
         }
