@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { dbConnect } from '@/lib/mongodb';
-import InspectionTask from '@/lib/models/InspectionTask';
+import { InspectionTaskModel } from '@/lib/models/InspectionTask';
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
     try {
         await dbConnect();
-        const task = await InspectionTask.findOne({ id: params.id });
+        const task = await InspectionTaskModel.findOne({ id: params.id });
         if (!task) {
             return NextResponse.json({ success: false, error: '未找到该任务' }, { status: 404 });
         }
@@ -20,7 +20,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     try {
         await dbConnect();
         const updateData = await request.json();
-        const task = await InspectionTask.findOneAndUpdate({ id: params.id }, updateData, { new: true });
+        const task = await InspectionTaskModel.findOneAndUpdate({ id: params.id }, updateData, { new: true });
         if (!task) {
             return NextResponse.json({ success: false, error: '未找到该任务' }, { status: 404 });
         }
@@ -34,7 +34,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
     try {
         await dbConnect();
-        const task = await InspectionTask.findOneAndDelete({ id: params.id });
+        const task = await InspectionTaskModel.findOneAndDelete({ id: params.id });
         if (!task) {
             return NextResponse.json({ success: false, error: '未找到该任务' }, { status: 404 });
         }

@@ -1,14 +1,12 @@
 import { NextResponse } from 'next/server';
 import { dbConnect } from '@/lib/mongodb';
-import Property from '@/lib/models/Property';
+import { PropertyModel } from '@/lib/models/Property';
 
 export async function GET() {
     try {
         await dbConnect();
-
         // 获取所有唯一的Property值
-        const properties = await Property.find().distinct('Property');
-
+        const properties = await PropertyModel.find().distinct('Property');
         return NextResponse.json({
             success: true,
             data: properties

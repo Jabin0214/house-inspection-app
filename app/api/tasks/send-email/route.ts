@@ -12,10 +12,10 @@ export async function POST(request: Request) {
             return NextResponse.json({ success: false, error: '未找到该任务' }, { status: 404 });
         }
         const result = await sendEmail(task);
-        if (result.success) {
+        if (result === true) {
             return NextResponse.json({ success: true });
         } else {
-            return NextResponse.json({ success: false, error: result.error }, { status: 500 });
+            return NextResponse.json({ success: false, error: '发送邮件失败' }, { status: 500 });
         }
     } catch (error) {
         console.error('发送邮件失败:', error);
