@@ -1,10 +1,5 @@
 export { dbConnect } from './mongodb';
-import InspectionTask, {
-    IInspectionTask,
-    InspectionTask as InspectionTaskType,
-    InspectionTaskInsert,
-    InspectionTaskUpdate
-} from './models/InspectionTask';
+import { InspectionTaskModel, IInspectionTask, InspectionTask, InspectionTaskInsert, InspectionTaskUpdate } from './models/InspectionTask';
 import Property from './models/Property';
 import { v4 as uuidv4 } from 'uuid';
 import mongoose from 'mongoose';
@@ -15,10 +10,10 @@ export function isConnected() {
 }
 
 // 获取所有检查任务（按时间排序）
-export async function getInspectionTasks(): Promise<InspectionTaskType[]> {
+export async function getInspectionTasks(): Promise<InspectionTask[]> {
     await connectToDatabase();
 
-    const tasks = await InspectionTask.find({})
+    const tasks = await InspectionTaskModel.find({})
         .sort({ scheduled_at: 1 })
         .exec();
 
@@ -34,10 +29,10 @@ export async function getInspectionTasks(): Promise<InspectionTaskType[]> {
 }
 
 // 获取历史记录（完成的任务）
-export async function getCompletedTasks(): Promise<InspectionTaskType[]> {
+export async function getCompletedTasks(): Promise<InspectionTask[]> {
     await connectToDatabase();
 
-    const tasks = await InspectionTask.find({ status: '完成' })
+    const tasks = await InspectionTaskModel.find({ status: '完成' })
         .sort({ scheduled_at: -1 })
         .exec();
 
@@ -53,10 +48,10 @@ export async function getCompletedTasks(): Promise<InspectionTaskType[]> {
 }
 
 // 添加新的检查任务
-export async function addInspectionTask(taskData: InspectionTaskInsert): Promise<InspectionTaskType> {
+export async function addInspectionTask(taskData: InspectionTaskInsert): Promise<InspectionTask> {
     await connectToDatabase();
 
-    const newTask = new InspectionTask({
+    const newTask = new InspectionTaskModel({
         id: uuidv4(),
         address: taskData.address,
         inspection_type: taskData.inspection_type,
@@ -80,7 +75,7 @@ export async function addInspectionTask(taskData: InspectionTaskInsert): Promise
 }
 
 // 更新检查任务
-export async function updateInspectionTask(id: string, updates: InspectionTaskUpdate): Promise<InspectionTaskType> {
+export async function updateInspectionTask(id: string, updates: InspectionTaskUpdate): Promise<InspectionTask> {
     await connectToDatabase();
 
     // 禁止更新address
@@ -96,7 +91,7 @@ export async function updateInspectionTask(id: string, updates: InspectionTaskUp
     delete updateData.id;
 
     // 用id字段查找
-    const updatedTask = await InspectionTask.findOneAndUpdate(
+    const updatedTask = await InspectionTaskModel.findOneAndUpdate(
         { id },
         updateData,
         { new: true, runValidators: true }
@@ -118,8 +113,8 @@ export async function updateInspectionTask(id: string, updates: InspectionTaskUp
 }
 
 // 状态推进逻辑
-export function getNextStatus(currentStatus: InspectionTaskType['status']): InspectionTaskType['status'] | null {
-    const statusFlow: InspectionTaskType['status'][] = ['需约时间', '等待检查', '检查完毕', '上传完毕', '完成'];
+export function getNextStatus(currentStatus: InspectionTask['status']): InspectionTask['status'] | null {
+    const statusFlow: InspectionTask['status'][] = ['需约时间', '等待检查', '检查完毕', '上传完毕', '完成'];
     const currentIndex = statusFlow.indexOf(currentStatus);
 
     if (currentIndex === -1 || currentIndex === statusFlow.length - 1) {
@@ -130,7 +125,7 @@ export function getNextStatus(currentStatus: InspectionTaskType['status']): Insp
 }
 
 // 推进任务状态
-export async function advanceTaskStatus(id: string, currentStatus: InspectionTaskType['status']): Promise<InspectionTaskType> {
+export async function advanceTaskStatus(id: string, currentStatus: InspectionTask['status']): Promise<InspectionTask> {
     const nextStatus = getNextStatus(currentStatus);
     if (!nextStatus) {
         throw new Error('无法推进状态');
@@ -147,7 +142,7 @@ export async function getAllProperties(): Promise<string[]> {
 
 export async function deleteInspectionTask(id: string): Promise<void> {
     await connectToDatabase();
-    const result = await InspectionTask.deleteOne({ id });
+    const result = await InspectionTaskModel.deleteOne({ id });
     if (result.deletedCount === 0) {
         throw new Error('任务不存在或已被删除');
     }
