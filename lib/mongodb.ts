@@ -1,64 +1,58 @@
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI!;
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/house-inspection';
 
 if (!MONGODB_URI) {
-    throw new Error('请在环境变量中设置 MONGODB_URI');
+    throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
 }
 
-let cached = global as any;
-if (!cached.mongoose) {
-    cached.mongoose = { conn: null, promise: null };
+let cached = global.mongoose;
+
+if (!cached) {
+    cached = global.mongoose = { conn: null, promise: null };
 }
 
-async function dbConnect() {
-    if (cached.mongoose.conn) {
-        return cached.mongoose.conn;
+export async function dbConnect() {
+    if (cached.conn) {
+        return cached.conn;
     }
 
-    if (!cached.mongoose.promise) {
+    if (!cached.promise) {
         const opts = {
-            bufferCommands: true,
-            serverSelectionTimeoutMS: 10000,
-            socketTimeoutMS: 45000,
-            family: 4,
+            bufferCommands: false,
             maxPoolSize: 10,
             minPoolSize: 5,
-            keepAlive: true,
-            keepAliveInitialDelay: 300000
+            serverSelectionTimeoutMS: 5000,
+            socketTimeoutMS: 45000,
         };
 
-        cached.mongoose.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-            console.log('MongoDB 连接成功');
+        mongoose.set('strictQuery', true);
+
+        cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+            console.log('MongoDB connected successfully');
             return mongoose;
         });
     }
 
     try {
-        cached.mongoose.conn = await cached.mongoose.promise;
+        cached.conn = await cached.promise;
     } catch (e) {
-        cached.mongoose.promise = null;
+        cached.promise = null;
         throw e;
     }
 
-    return cached.mongoose.conn;
+    return cached.conn;
 }
 
-// 监听连接错误
+// 添加连接事件监听器
 mongoose.connection.on('error', (err) => {
-    console.error('MongoDB 连接错误:', err);
+    console.error('MongoDB connection error:', err);
 });
 
-// 监听连接断开
 mongoose.connection.on('disconnected', () => {
-    console.log('MongoDB 连接断开，尝试重新连接...');
-    cached.mongoose.conn = null;
-    cached.mongoose.promise = null;
+    console.warn('MongoDB disconnected');
 });
 
-// 监听连接重新连接
 mongoose.connection.on('reconnected', () => {
-    console.log('MongoDB 重新连接成功');
-});
-
-export default dbConnect; 
+    console.info('MongoDB reconnected');
+}); 

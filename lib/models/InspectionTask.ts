@@ -35,7 +35,16 @@ const InspectionTaskSchema: Schema = new Schema({
     address: {
         type: String,
         required: true,
-        trim: true
+        trim: true,
+        ref: 'Property',
+        validate: {
+            validator: async function (value: string) {
+                const Property = mongoose.model('Property');
+                const property = await Property.findOne({ Property: value });
+                return property !== null;
+            },
+            message: '该地址不存在于物业列表中'
+        }
     },
     inspection_type: {
         type: String,
@@ -72,10 +81,9 @@ const InspectionTaskSchema: Schema = new Schema({
         default: ''
     }
 }, {
-    timestamps: false,
+    timestamps: true,
     toJSON: {
         transform: function (doc: any, ret: any) {
-            // id 字段直接用 ret.id
             delete ret._id;
             delete ret.__v;
             if (ret.scheduled_at) {

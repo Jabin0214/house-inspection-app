@@ -27,7 +27,7 @@ npm install
 创建 `.env.local` 文件：
 
 ```env
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database?retryWrites=true&w=majority
+MONGODB_URI
 ```
 
 ### 3. 启动应用

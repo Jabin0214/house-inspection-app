@@ -21,7 +21,14 @@ export default function AddPage() {
         fetch('/api/properties')
             .then(res => res.json())
             .then(data => {
-                if (data.success) setAddressOptions(data.data);
+                if (data.success) {
+                    const addresses = data.data.map((addr: string) => addr);
+                    setAddressOptions(addresses);
+                }
+            })
+            .catch(error => {
+                console.error('加载地址列表失败:', error);
+                message.error('加载地址列表失败');
             });
     }, []);
 
@@ -35,6 +42,7 @@ export default function AddPage() {
                 email: values.email || '',
                 scheduled_at: values.scheduled_at ? values.scheduled_at.toISOString() : undefined,
                 status: '需约时间',
+                notes: ''
             };
 
             const response = await fetch('/api/tasks', {
@@ -51,10 +59,10 @@ export default function AddPage() {
                 message.success('安排添加成功');
                 router.push('/');
             } else {
-                message.error('添加失败: ' + result.error);
+                throw new Error(result.error);
             }
         } catch (error) {
-            message.error('网络请求失败，请重试');
+            message.error('添加失败: ' + (error instanceof Error ? error.message : '未知错误'));
         } finally {
             setLoading(false);
         }
@@ -92,14 +100,14 @@ export default function AddPage() {
                             showSearch
                             placeholder="请选择物业地址"
                             filterOption={(input, option) =>
-                                (option?.children as string).toLowerCase().includes(input.toLowerCase())
+                                (option?.label as string).toLowerCase().includes(input.toLowerCase())
                             }
                             disabled={addressOptions.length === 0}
                         >
                             {addressOptions.map(addr => (
                                 <Option key={addr} value={addr}>{addr}</Option>
                             ))}
-                        </Select>
+                        </Select>   
                     </Form.Item>
 
                     <Form.Item

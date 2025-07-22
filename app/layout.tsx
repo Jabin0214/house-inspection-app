@@ -1,7 +1,7 @@
 'use client';
 
 import { AntdRegistry } from '@ant-design/nextjs-registry';
-import { ConfigProvider } from 'antd';
+import { ConfigProvider, App } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import './globals.css';
 
@@ -18,7 +18,7 @@ export default function RootLayout({
             locale={zhCN}
             theme={{
               token: {
-                fontFamily: 'system-ui, -apple-system, sans-serif',
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
               },
               components: {
                 Table: {
@@ -31,9 +31,9 @@ export default function RootLayout({
               },
             }}
           >
-            <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
+            <App>
               {children}
-            </div>
+            </App>
           </ConfigProvider>
         </AntdRegistry>
       </body>

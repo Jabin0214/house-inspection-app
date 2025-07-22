@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { dbConnect } from '@/lib/database';
+import { dbConnect } from '@/lib/mongodb';
 import InspectionTask from '@/lib/models/InspectionTask';
 
 export async function GET() {
