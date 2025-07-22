@@ -7,6 +7,8 @@ import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
 import Link from 'next/link';
 import type { InspectionTask } from '../../lib/models/InspectionTask';
+import { Breakpoint } from 'antd/lib';
+import { getInspectionTypeDisplayText } from '../../lib/emailUtils';
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -102,15 +104,6 @@ export default function HistoryPage() {
         } finally {
             setEditingCell('');
         }
-    };
-
-    const getInspectionTypeText = (type: string) => {
-        const typeMap = {
-            'routine': '常规检查',
-            'move-in': '入住检查',
-            'move-out': '退房检查'
-        };
-        return typeMap[type as keyof typeof typeMap] || type;
     };
 
     const inspectionTypes = [
@@ -238,8 +231,26 @@ export default function HistoryPage() {
             dataIndex: 'address',
             key: 'address',
             width: '35%',
+            responsive: ['md'],
             render: (address: string) => (
                 <span style={{ fontSize: '12px' }}>{address}</span>
+            ),
+        },
+        {
+            title: '地址',
+            dataIndex: 'address',
+            key: 'address-mobile',
+            responsive: ['xs', 'sm'],
+            render: (address: string, record: InspectionTask) => (
+                <div>
+                    <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '4px' }}>
+                        {address}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#666', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        <span>{getInspectionTypeDisplayText(record.inspection_type)}</span>
+                        <span>{record.status}</span>
+                    </div>
+                </div>
             ),
         },
         {
@@ -247,13 +258,14 @@ export default function HistoryPage() {
             dataIndex: 'inspection_type',
             key: 'inspection_type',
             width: '15%',
+            responsive: ['md'],
             render: (type: string, record: InspectionTask) => (
                 <EditableCell
                     record={record}
                     field="inspection_type"
                     type="select"
                 >
-                    <span style={{ fontSize: '12px', cursor: 'pointer' }}>{getInspectionTypeText(type)}</span>
+                    <span style={{ fontSize: '12px', cursor: 'pointer' }}>{getInspectionTypeDisplayText(type)}</span>
                 </EditableCell>
             ),
         },
@@ -262,6 +274,7 @@ export default function HistoryPage() {
             dataIndex: 'status',
             key: 'status',
             width: '15%',
+            responsive: ['md'],
             render: (status: string, record: InspectionTask) => (
                 <EditableCell
                     record={record}
@@ -277,6 +290,7 @@ export default function HistoryPage() {
             dataIndex: 'scheduled_at',
             key: 'scheduled_at',
             width: '25%',
+            responsive: ['md'],
             render: (date: string, record: InspectionTask) => (
                 <EditableCell
                     record={record}
@@ -309,32 +323,46 @@ export default function HistoryPage() {
     ];
 
     return (
-        <div style={{ padding: '12px' }}>
+        <div style={{
+            padding: '12px',
+            maxWidth: '1200px',
+            margin: '0 auto',
+            width: '100%'
+        }}>
             <div style={{
                 marginBottom: '12px',
                 display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
+                justifyContent: 'flex-start',
+                alignItems: 'center',
+                gap: '8px',
+                flexWrap: 'wrap'
             }}>
-                <Space>
-                    <Link href="/">
-                        <Button icon={<ArrowLeftOutlined />} size="small">返回</Button>
-                    </Link>
-                    <Title level={3} style={{ margin: 0, fontSize: '18px' }}>历史记录</Title>
-                </Space>
+                <Link href="/">
+                    <Button icon={<ArrowLeftOutlined />} size="small">返回</Button>
+                </Link>
+                <Title level={3} style={{
+                    margin: 0,
+                    fontSize: '16px',
+                    lineHeight: 1.4
+                }}>历史记录</Title>
             </div>
 
             <Table
-                columns={columns}
+                columns={columns.map(col => ({
+                    ...col,
+                    responsive: col.responsive as Breakpoint[]
+                }))}
                 dataSource={tasks}
                 loading={loading}
                 rowKey="id"
                 pagination={{
                     defaultPageSize: 50,
                     size: 'small',
-                    showTotal: (total) => `共 ${total} 条记录`
+                    showTotal: (total) => `共 ${total} 条记录`,
+                    responsive: true
                 }}
                 size="small"
+                scroll={{ x: 'max-content' }}
             />
         </div>
     );

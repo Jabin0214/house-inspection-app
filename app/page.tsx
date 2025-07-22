@@ -2,11 +2,13 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Table, Button, message, Tag, Space, Typography, Input, Modal, DatePicker, Select, Dropdown, Popconfirm } from 'antd';
-import { PlusOutlined, EditOutlined, MoreOutlined, DeleteOutlined, MailOutlined, SendOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, MoreOutlined, DeleteOutlined, SendOutlined } from '@ant-design/icons';
+import type { Breakpoint } from 'antd';
 import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
 import Link from 'next/link';
 import type { InspectionTask } from '../lib/models/InspectionTask';
+import { getInspectionTypeDisplayText } from '../lib/emailUtils';
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -157,54 +159,6 @@ export default function HomePage() {
       return;
     }
 
-    const scheduledTime = task.scheduled_at
-      ? new Date(task.scheduled_at).toLocaleString('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-      })
-      : '待定';
-
-    const emailBody = `
-尊敬的业主：
-
-您好！
-
-我们计划对以下房屋进行检查：
-
-地址：${task.address}
-检查类型：${getInspectionTypeText(task.inspection_type)}
-计划时间：${scheduledTime}
-${task.notes ? `\n备注：${task.notes}` : ''}
-
-如果您对检查时间有任何问题，请及时与我们联系。
-
-谢谢！
-
-ST International Ltd
-    `.trim();
-
-    try {
-      const mailtoLink = `mailto:${task.email}?subject=${encodeURIComponent(`房屋检查通知 - ${task.address}`)}&body=${encodeURIComponent(emailBody)}`;
-      window.location.href = mailtoLink;
-
-      await updateTask(task.id, 'status', '已发邮件');
-      message.success('邮件窗口已打开，请在邮件客户端中发送邮件');
-    } catch (error) {
-      message.error('操作失败，请重试');
-      console.error('邮件发送失败:', error);
-    }
-  };
-
-  const handleDirectSend = async (task: InspectionTask) => {
-    if (!task.email) {
-      message.error('请先设置收件人邮箱');
-      return;
-    }
-
     try {
       setLoading(true);
       const response = await fetch('/api/tasks/send-email', {
@@ -239,27 +193,12 @@ ST International Ltd
           <Button
             type="text"
             size="small"
-            icon={<MailOutlined />}
+            icon={<SendOutlined />}
             onClick={() => handleSendEmail(record)}
             style={{ fontSize: '12px', width: '100%', textAlign: 'left' }}
             disabled={!record.email}
           >
-            {record.email ? '用邮件客户端发送' : '请先设置邮箱'}
-          </Button>
-        )
-      },
-      {
-        key: 'direct-send',
-        label: (
-          <Button
-            type="text"
-            size="small"
-            icon={<SendOutlined />}
-            onClick={() => handleDirectSend(record)}
-            style={{ fontSize: '12px', width: '100%', textAlign: 'left' }}
-            disabled={!record.email}
-          >
-            直接发送邮件
+            {record.email ? '发送邮件' : '请先设置邮箱'}
           </Button>
         )
       },
@@ -295,15 +234,6 @@ ST International Ltd
       '完成': 'green'
     };
     return colors[status] || 'default';
-  };
-
-  const getInspectionTypeText = (type: string) => {
-    const typeMap = {
-      'routine': '常规检查',
-      'move-in': '入住检查',
-      'move-out': '退房检查'
-    };
-    return typeMap[type as keyof typeof typeMap] || type;
   };
 
   const inspectionTypes = [
@@ -494,21 +424,37 @@ ST International Ltd
       dataIndex: 'address',
       key: 'address',
       width: '28%',
-      render: (address: string, record: InspectionTask) => (
-        <EditableCell
-          record={record}
-          field="address"
-          type="text"
-        >
-          <span style={{ fontSize: '12px' }}>{address}</span>
-        </EditableCell>
-      ),
+      render: (address: string, record: InspectionTask) => {
+        const isMobile = window.innerWidth < 768;
+        return (
+          <EditableCell
+            record={record}
+            field="address"
+            type="text"
+          >
+            {isMobile ? (
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '4px' }}>{address}</div>
+                <div style={{ fontSize: '12px', color: '#666', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  <span>{getInspectionTypeDisplayText(record.inspection_type)}</span>
+                  {record.scheduled_at && (
+                    <span>{dayjs(record.scheduled_at).format('MM-DD HH:mm')}</span>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <span style={{ fontSize: '12px' }}>{address}</span>
+            )}
+          </EditableCell>
+        );
+      },
     },
     {
       title: '计划时间',
       dataIndex: 'scheduled_at',
       key: 'scheduled_at',
       width: '18%',
+      responsive: ['md'],
       render: (date: string, record: InspectionTask) => (
         <EditableCell
           record={record}
@@ -526,47 +472,45 @@ ST International Ltd
       dataIndex: 'inspection_type',
       key: 'inspection_type',
       width: '14%',
+      responsive: ['md'],
       render: (type: string, record: InspectionTask) => (
         <EditableCell
           record={record}
           field="inspection_type"
           type="select"
         >
-          <span style={{ fontSize: '12px', cursor: 'pointer' }}>{getInspectionTypeText(type)}</span>
+          <span style={{ fontSize: '12px', cursor: 'pointer' }}>{getInspectionTypeDisplayText(type)}</span>
         </EditableCell>
       ),
     },
     {
-      title: '电话',
-      dataIndex: 'phone',
-      key: 'phone',
-      width: '14%',
-      render: (phone: string, record: InspectionTask) => (
-        <EditableCell
-          record={record}
-          field="phone"
-        >
-          <span style={{ fontSize: '12px', color: phone ? 'inherit' : '#999' }}>
-            {phone || '点击填写'}
-          </span>
-        </EditableCell>
-      ),
-    },
-    {
-      title: '邮箱',
-      dataIndex: 'email',
-      key: 'email',
-      width: '16%',
-      render: (email: string, record: InspectionTask) => (
-        <EditableCell
-          record={record}
-          field="email"
-        >
-          <span style={{ fontSize: '12px', color: email ? 'inherit' : '#999' }}>
-            {email || '点击填写'}
-          </span>
-        </EditableCell>
-      ),
+      title: '联系方式',
+      dataIndex: 'contact',
+      key: 'contact',
+      width: '30%',
+      render: (_: any, record: InspectionTask) => {
+        const isMobile = window.innerWidth < 768;
+        return (
+          <div style={{
+            fontSize: '12px',
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: isMobile ? '4px' : '8px'
+          }}>
+            <EditableCell record={record} field="phone">
+              <span style={{ color: record.phone ? 'inherit' : '#999' }}>
+                {record.phone || '添加电话'}
+              </span>
+            </EditableCell>
+            {!isMobile && <span style={{ color: '#ddd' }}>|</span>}
+            <EditableCell record={record} field="email">
+              <span style={{ color: record.email ? 'inherit' : '#999' }}>
+                {record.email || '添加邮箱'}
+              </span>
+            </EditableCell>
+          </div>
+        );
+      },
     },
     {
       title: '状态',
@@ -622,15 +566,22 @@ ST International Ltd
   })).filter(group => group.tasks.length > 0);
 
   return (
-    <div style={{ padding: '12px' }}>
+    <div style={{
+      padding: '8px',
+      maxWidth: '1200px',
+      margin: '0 auto'
+    }}>
       <div style={{
-        marginBottom: '12px',
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'center'
+        alignItems: 'center',
+        flexWrap: 'wrap',
       }}>
-        <Title level={3} style={{ margin: 0, fontSize: '18px' }}>房屋检查安排</Title>
-        <Space size="small">
+        <Title level={3} style={{
+          margin: 0,
+          fontSize: '16px'
+        }}>房屋检查安排</Title>
+        <Space size="small" wrap>
           <Link href="/add">
             <Button type="primary" size="small" icon={<PlusOutlined />}>添加新安排</Button>
           </Link>
@@ -641,22 +592,32 @@ ST International Ltd
       </div>
 
       {groupedTasks.length === 0 && !loading ? (
-        <div style={{ textAlign: 'center', color: '#999', marginTop: 24, fontSize: '13px' }}>
+        <div style={{
+          textAlign: 'center',
+          color: '#999',
+          marginTop: 16,
+          fontSize: '13px',
+          padding: '24px 16px'
+        }}>
           暂无数据，请点击"添加新安排"开始使用
         </div>
       ) : (
         groupedTasks.map(group => (
-          <div key={group.status} style={{ marginBottom: 16 }}>
+          <div key={group.status} style={{ marginBottom: 12 }}>
             <div style={{
-              fontSize: '14px',
+              fontSize: '13px',
               fontWeight: 500,
-              marginBottom: 8,
-              color: '#666'
+              marginBottom: 4,
+              color: '#666',
+              padding: '0 4px'
             }}>
               {group.status}
             </div>
             <Table
-              columns={columns}
+              columns={columns.map(col => ({
+                ...col,
+                responsive: col.responsive as Breakpoint[]
+              }))}
               dataSource={group.tasks}
               loading={loading}
               rowKey="id"
@@ -665,13 +626,13 @@ ST International Ltd
               expandable={{
                 expandedRowRender: (record: InspectionTask) => (
                   <div style={{
-                    padding: '0 12px',
+                    padding: '4px 8px',
                     position: 'relative',
-                    marginTop: '-6px',
-                    marginBottom: '-6px'
+                    marginTop: '-4px',
+                    marginBottom: '-4px'
                   }}>
                     <div style={{
-                      marginRight: '24px',
+                      marginRight: '16px',
                       fontSize: '11px',
                       whiteSpace: 'pre-wrap',
                       wordBreak: 'break-all',
@@ -701,7 +662,7 @@ ST International Ltd
                           padding: 0,
                           height: 'auto',
                           minWidth: '20px',
-                          marginLeft: '8px',
+                          marginLeft: '4px',
                           color: '#999'
                         }}
                       />
@@ -711,6 +672,7 @@ ST International Ltd
                 expandIcon: () => null,
                 defaultExpandAllRows: true
               }}
+              scroll={{ x: 'max-content' }}
             />
           </div>
         ))

@@ -16,7 +16,9 @@ export async function GET() {
 
         console.log('开始查询任务列表...');
         const tasks = await InspectionTaskModel.find({ status: { $ne: '完成' } })
-            .sort({ scheduled_at: 1, createdAt: -1 });
+            .sort({ scheduled_at: 1, createdAt: -1 })
+            .lean()
+            .exec();
         console.log(`成功获取 ${tasks.length} 个任务`);
 
         return NextResponse.json({
@@ -70,7 +72,7 @@ export async function POST(request: Request) {
         console.log('模型导入成功');
 
         console.log('查询物业信息...');
-        const property = await PropertyModel.findOne({ Property: data.address });
+        const property = await PropertyModel.findOne({ Property: data.address }).lean().exec();
         if (!property) {
             console.log('物业不存在:', data.address);
             return NextResponse.json({
@@ -81,13 +83,16 @@ export async function POST(request: Request) {
         console.log('物业信息验证成功');
 
         console.log('创建新任务...');
-        const task = new InspectionTaskModel(data);
+        const task = new InspectionTaskModel({
+            ...data,
+            status: '需约时间'
+        });
         await task.save();
         console.log('任务创建成功:', task.id);
 
         return NextResponse.json({
             success: true,
-            data: task
+            data: task.toJSON()
         });
     } catch (error) {
         const errorDetails = {

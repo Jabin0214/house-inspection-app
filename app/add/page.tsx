@@ -104,20 +104,35 @@ export default function AddPage() {
     };
 
     return (
-        <div style={{ padding: '24px', maxWidth: '800px', margin: '0 auto' }}>
-            <div style={{ marginBottom: '24px' }}>
-                <Space>
-                    <Button
-                        icon={<ArrowLeftOutlined />}
-                        onClick={() => router.back()}
-                    >
-                        返回
-                    </Button>
-                    <Title level={2} style={{ margin: 0 }}>添加新的检查安排</Title>
-                </Space>
+        <div style={{
+            padding: '12px',
+            maxWidth: '800px',
+            margin: '0 auto',
+            width: '100%'
+        }}>
+            <div style={{
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                flexWrap: 'wrap'
+            }}>
+                <Button
+                    icon={<ArrowLeftOutlined />}
+                    onClick={() => router.back()}
+                    style={{ flexShrink: 0 }}
+                >
+                    返回
+                </Button>
+                <Title level={2} style={{
+                    margin: 0,
+                    fontSize: '18px',
+                    lineHeight: 1.4,
+                    wordBreak: 'break-word'
+                }}>添加新的检查安排</Title>
             </div>
 
-            <Card>
+            <Card bodyStyle={{ padding: '12px' }}>
                 <Form
                     form={form}
                     layout="vertical"
@@ -125,46 +140,54 @@ export default function AddPage() {
                     initialValues={{
                         status: '需约时间',
                     }}
+                    style={{ width: '100%' }}
                 >
-                    <Form.Item
-                        label="物业地址"
-                        name="address"
-                        rules={[{ required: true, message: '请选择物业地址' }]}
-                    >
-                        <Select
-                            showSearch
-                            placeholder={addressLoading ? "加载中..." : "请选择物业地址"}
-                            optionFilterProp="children"
-                            filterOption={(input, option) => {
-                                if (!option?.value) return false;
-                                return option.value.toString().toLowerCase().includes(input.toLowerCase());
-                            }}
-                            disabled={addressLoading || addressOptions.length === 0}
-                            allowClear
-                            loading={addressLoading}
+                    <div style={{
+                        display: 'grid',
+                        gap: '12px',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))'
+                    }}>
+                        <Form.Item
+                            label="物业地址"
+                            name="address"
+                            rules={[{ required: true, message: '请选择物业地址' }]}
                         >
-                            {addressOptions.map(addr => (
-                                <Option key={addr} value={addr}>{addr}</Option>
-                            ))}
-                        </Select>
-                    </Form.Item>
+                            <Select
+                                showSearch
+                                placeholder={addressLoading ? "加载中..." : "请选择物业地址"}
+                                optionFilterProp="children"
+                                filterOption={(input, option) => {
+                                    if (!option?.value) return false;
+                                    return option.value.toString().toLowerCase().includes(input.toLowerCase());
+                                }}
+                                disabled={addressLoading || addressOptions.length === 0}
+                                loading={addressLoading}
+                                allowClear
+                            >
+                                {addressOptions.map(addr => (
+                                    <Option key={addr} value={addr}>{addr}</Option>
+                                ))}
+                            </Select>
+                        </Form.Item>
 
-                    <Form.Item
-                        label="检查类型"
-                        name="inspection_type"
-                        rules={[{ required: true, message: '请选择检查类型' }]}
-                    >
-                        <Select placeholder="请选择检查类型">
-                            <Option value="routine">常规检查</Option>
-                            <Option value="move-in">入住检查</Option>
-                            <Option value="move-out">退房检查</Option>
-                        </Select>
-                    </Form.Item>
+                        <Form.Item
+                            label="检查类型"
+                            name="inspection_type"
+                            rules={[{ required: true, message: '请选择检查类型' }]}
+                        >
+                            <Select placeholder="请选择检查类型">
+                                <Option value="routine">常规检查</Option>
+                                <Option value="move-in">入住检查</Option>
+                                <Option value="move-out">退房检查</Option>
+                            </Select>
+                        </Form.Item>
+                    </div>
 
                     <Form.Item
                         label="计划检查时间"
                         name="scheduled_at"
                         help="可以留空，表示需约时间"
+                        style={{ marginBottom: '12px' }}
                     >
                         <DatePicker
                             showTime
@@ -175,28 +198,34 @@ export default function AddPage() {
                         />
                     </Form.Item>
 
-                    <Divider orientation="left">联系方式（可选）</Divider>
+                    <Divider orientation="left" style={{ margin: '16px 0 12px' }}>联系方式（可选）</Divider>
 
-                    <Form.Item
-                        label="联系电话"
-                        name="phone"
-                        rules={[{ validator: validatePhone }]}
-                        help="支持手机号和座机号"
-                    >
-                        <Input placeholder="请输入联系电话（可选）" />
-                    </Form.Item>
+                    <div style={{
+                        display: 'grid',
+                        gap: '12px',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))'
+                    }}>
+                        <Form.Item
+                            label="联系电话"
+                            name="phone"
+                            rules={[{ validator: validatePhone }]}
+                            help="支持手机号和座机号"
+                        >
+                            <Input placeholder="请输入联系电话（可选）" />
+                        </Form.Item>
 
-                    <Form.Item
-                        label="邮箱地址"
-                        name="email"
-                        rules={[{ validator: validateEmail }]}
-                        help="用于发送检查通知"
-                    >
-                        <Input placeholder="请输入邮箱地址（可选）" />
-                    </Form.Item>
+                        <Form.Item
+                            label="邮箱地址"
+                            name="email"
+                            rules={[{ validator: validateEmail }]}
+                            help="用于发送检查通知"
+                        >
+                            <Input placeholder="请输入邮箱地址（可选）" />
+                        </Form.Item>
+                    </div>
 
-                    <Form.Item style={{ marginTop: '32px' }}>
-                        <Space>
+                    <Form.Item style={{ marginTop: '24px', marginBottom: 0 }}>
+                        <Space wrap style={{ width: '100%', justifyContent: 'flex-start', gap: '8px' }}>
                             <Button
                                 type="primary"
                                 htmlType="submit"
