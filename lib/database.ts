@@ -1,4 +1,4 @@
-import dbConnect from './mongodb';
+export { dbConnect } from './mongodb';
 import InspectionTask, {
     IInspectionTask,
     InspectionTask as InspectionTaskType,
@@ -8,8 +8,6 @@ import InspectionTask, {
 import Property from './models/Property';
 import { v4 as uuidv4 } from 'uuid';
 import mongoose from 'mongoose';
-
-export { dbConnect };
 
 // 检查连接状态的工具函数
 export function isConnected() {

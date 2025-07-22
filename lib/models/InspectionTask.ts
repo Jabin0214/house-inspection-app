@@ -98,5 +98,5 @@ InspectionTaskSchema.index({ id: 1 }, { unique: true });
 InspectionTaskSchema.index({ status: 1 });
 InspectionTaskSchema.index({ scheduled_at: 1 });
 
-export default mongoose.models.InspectionTask ||
+export const InspectionTaskModel = mongoose.models.InspectionTask ||
     mongoose.model<IInspectionTask>('InspectionTask', InspectionTaskSchema); 

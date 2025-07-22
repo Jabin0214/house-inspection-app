@@ -24,5 +24,5 @@ const PropertySchema: Schema = new Schema({
 
 // PropertySchema.index({ Property: 1 }, { unique: true }); // 已移除，避免重复索引
 
-export default mongoose.models.Property ||
+export const PropertyModel = mongoose.models.Property ||
     mongoose.model<IProperty>('Property', PropertySchema); 
