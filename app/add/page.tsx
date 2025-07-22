@@ -1,0 +1,176 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { Form, Input, Select, DatePicker, Button, Card, message, Space, Typography, Divider } from 'antd';
+import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
+import { useRouter } from 'next/navigation';
+import dayjs from 'dayjs';
+import type { InspectionTaskInsert } from '../../lib/models/InspectionTask';
+
+const { Title } = Typography;
+const { Option } = Select;
+
+export default function AddPage() {
+    const [form] = Form.useForm();
+    const [loading, setLoading] = useState(false);
+    const [addressOptions, setAddressOptions] = useState<string[]>([]);
+    const router = useRouter();
+
+    useEffect(() => {
+        // 获取所有property地址
+        fetch('/api/properties')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) setAddressOptions(data.data);
+            });
+    }, []);
+
+    const onFinish = async (values: any) => {
+        setLoading(true);
+        try {
+            const task: InspectionTaskInsert = {
+                address: values.address,
+                inspection_type: values.inspection_type,
+                phone: values.phone || '',
+                email: values.email || '',
+                scheduled_at: values.scheduled_at ? values.scheduled_at.toISOString() : undefined,
+                status: '需约时间',
+            };
+
+            const response = await fetch('/api/tasks', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(task)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                message.success('安排添加成功');
+                router.push('/');
+            } else {
+                message.error('添加失败: ' + result.error);
+            }
+        } catch (error) {
+            message.error('网络请求失败，请重试');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div style={{ padding: '24px', maxWidth: '800px', margin: '0 auto' }}>
+            <div style={{ marginBottom: '24px' }}>
+                <Space>
+                    <Button
+                        icon={<ArrowLeftOutlined />}
+                        onClick={() => router.back()}
+                    >
+                        返回
+                    </Button>
+                    <Title level={2} style={{ margin: 0 }}>添加新的检查安排</Title>
+                </Space>
+            </div>
+
+            <Card>
+                <Form
+                    form={form}
+                    layout="vertical"
+                    onFinish={onFinish}
+                    initialValues={{
+                        status: '需约时间',
+                    }}
+                >
+                    <Form.Item
+                        label="物业地址"
+                        name="address"
+                        rules={[{ required: true, message: '请选择物业地址' }]}
+                    >
+                        <Select
+                            showSearch
+                            placeholder="请选择物业地址"
+                            filterOption={(input, option) =>
+                                (option?.children as string).toLowerCase().includes(input.toLowerCase())
+                            }
+                            disabled={addressOptions.length === 0}
+                        >
+                            {addressOptions.map(addr => (
+                                <Option key={addr} value={addr}>{addr}</Option>
+                            ))}
+                        </Select>
+                    </Form.Item>
+
+                    <Form.Item
+                        label="检查类型"
+                        name="inspection_type"
+                        rules={[{ required: true, message: '请选择检查类型' }]}
+                    >
+                        <Select placeholder="请选择检查类型">
+                            <Option value="routine">常规检查</Option>
+                            <Option value="move-in">入住检查</Option>
+                            <Option value="move-out">退房检查</Option>
+                        </Select>
+                    </Form.Item>
+
+                    <Form.Item
+                        label="计划检查时间"
+                        name="scheduled_at"
+                        help="可以留空，表示需约时间"
+                    >
+                        <DatePicker
+                            showTime
+                            style={{ width: '100%' }}
+                            placeholder="选择检查时间（可选）"
+                            format="YYYY-MM-DD HH:mm"
+                            disabledDate={(current) => current && current < dayjs().startOf('day')}
+                        />
+                    </Form.Item>
+
+                    <Divider orientation="left">联系方式（可选）</Divider>
+
+                    <Form.Item
+                        label="联系电话"
+                        name="phone"
+                        help="可以后续补充"
+                    >
+                        <Input placeholder="请输入联系电话（可选）" />
+                    </Form.Item>
+
+                    <Form.Item
+                        label="邮箱地址"
+                        name="email"
+                        rules={[
+                            { type: 'email', message: '请输入有效的邮箱地址' }
+                        ]}
+                        help="可以后续补充"
+                    >
+                        <Input placeholder="请输入邮箱地址（可选）" />
+                    </Form.Item>
+
+                    <Form.Item style={{ marginTop: '32px' }}>
+                        <Space>
+                            <Button
+                                type="primary"
+                                htmlType="submit"
+                                loading={loading}
+                                icon={<SaveOutlined />}
+                                size="large"
+                                disabled={addressOptions.length === 0}
+                            >
+                                保存安排
+                            </Button>
+                            <Button
+                                onClick={() => form.resetFields()}
+                                size="large"
+                            >
+                                重置表单
+                            </Button>
+                        </Space>
+                    </Form.Item>
+                </Form>
+            </Card>
+        </div>
+    );
+} 
