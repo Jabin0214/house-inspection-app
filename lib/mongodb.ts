@@ -6,11 +6,16 @@ if (!MONGODB_URI) {
     throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
 }
 
-declare global {
-    var mongoose: { conn: typeof mongoose | null; promise: Promise<typeof mongoose> | null } | undefined;
+interface MongooseCache {
+    conn: typeof mongoose | null;
+    promise: Promise<typeof mongoose> | null;
 }
 
-const cached = global.mongoose || { conn: null, promise: null };
+declare global {
+    var mongoose: MongooseCache | undefined;
+}
+
+const cached: MongooseCache = global.mongoose || { conn: null, promise: null };
 global.mongoose = cached;
 
 export async function dbConnect() {
@@ -31,7 +36,6 @@ export async function dbConnect() {
             mongoose.set('strictQuery', true);
 
             cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-                console.log('MongoDB connected successfully');
                 return mongoose;
             });
         }
@@ -43,6 +47,7 @@ export async function dbConnect() {
             throw e;
         }
 
+        console.log('MongoDB connected successfully');
         return cached.conn;
     } catch (error) {
         console.error('MongoDB connection error:', error);
