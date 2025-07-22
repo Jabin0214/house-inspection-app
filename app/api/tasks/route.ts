@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { dbConnect } from '@/lib/mongodb';
-import InspectionTask from '@/lib/models/InspectionTask';
-import Property from '@/lib/models/Property';
+import { type InspectionTask } from '@/lib/models/InspectionTask';
+import { type IProperty } from '@/lib/models/Property';
 
 export async function GET() {
     try {
         await dbConnect();
-        const tasks = await InspectionTask.find({ status: { $ne: '完成' } })
+        const { InspectionTaskModel } = await import('@/lib/models/InspectionTask');
+        const tasks = await InspectionTaskModel.find({ status: { $ne: '完成' } })
             .sort({ scheduled_at: 1, createdAt: -1 });
 
         return NextResponse.json({
@@ -27,7 +28,6 @@ export async function POST(request: Request) {
         await dbConnect();
         const data = await request.json();
 
-        // 验证必填字段
         if (!data.address || !data.inspection_type) {
             return NextResponse.json({
                 success: false,
@@ -35,8 +35,11 @@ export async function POST(request: Request) {
             }, { status: 400 });
         }
 
-        // 验证地址是否存在于Property集合中
-        const property = await Property.findOne({ Property: data.address });
+        // 从 Property 模型动态导入（避免构建时依赖错误）
+        const { PropertyModel } = await import('@/lib/models/Property');
+        const { InspectionTaskModel } = await import('@/lib/models/InspectionTask');
+
+        const property = await PropertyModel.findOne({ Property: data.address });
         if (!property) {
             return NextResponse.json({
                 success: false,
@@ -44,8 +47,7 @@ export async function POST(request: Request) {
             }, { status: 400 });
         }
 
-        // 创建新任务
-        const task = new InspectionTask(data);
+        const task = new InspectionTaskModel(data);
         await task.save();
 
         return NextResponse.json({
@@ -59,4 +61,4 @@ export async function POST(request: Request) {
             error: error instanceof Error ? error.message : '创建任务失败'
         }, { status: 500 });
     }
-} 
+}
