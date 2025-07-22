@@ -1,13 +1,15 @@
 import { NextResponse } from 'next/server';
 import { sendEmail } from '@/lib/email';
 import InspectionTask from '@/lib/models/InspectionTask';
+import dbConnect from '@/lib/mongodb';
 
 export async function POST(request: Request) {
     try {
+        await dbConnect();
         const { taskId } = await request.json();
 
         // 获取任务信息
-        const task = await InspectionTask.findOne({ id: taskId });
+        const task = await InspectionTask.findOne({ id: taskId }).maxTimeMS(5000).exec();
         if (!task) {
             return NextResponse.json({ success: false, error: '任务不存在' }, { status: 404 });
         }
@@ -22,8 +24,9 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('发送邮件失败:', error);
+        const errorMessage = error instanceof Error ? error.message : '发送邮件失败';
         return NextResponse.json(
-            { success: false, error: '发送邮件失败' },
+            { success: false, error: errorMessage },
             { status: 500 }
         );
     }

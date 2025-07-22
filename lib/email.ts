@@ -3,100 +3,87 @@ import type { InspectionTask } from './models/InspectionTask';
 
 // 创建邮件传输器
 const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD
-    }
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD
+  }
 });
 
-// 获取检查类型的中文名称
+// 获取英文检查类型名称
 const getInspectionTypeText = (type: string) => {
-    const typeMap = {
-        'routine': '常规检查',
-        'move-in': '入住检查',
-        'move-out': '退房检查'
-    };
-    return typeMap[type as keyof typeof typeMap] || type;
+  const typeMap = {
+    'routine': 'routine inspection',
+    'move-in': 'move-in inspection',
+    'move-out': 'move-out inspection'
+  };
+  return typeMap[type as keyof typeof typeMap] || type;
 };
 
-// 生成邮件内容
+// 生成英文邮件内容（无时间）
 const generateEmailContent = (task: InspectionTask) => {
-    const scheduledTime = task.scheduled_at
-        ? new Date(task.scheduled_at).toLocaleString('zh-CN', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false
-        })
-        : '待定';
+  const inspectionText = getInspectionTypeText(task.inspection_type);
 
-    return {
-        subject: `房屋检查通知 - ${task.address}`,
-        text: `
-尊敬的业主：
+  return {
+    subject: `Arranging a ${inspectionText} - ${task.address}`,
+    text: `
+Dear Tenants,
 
-您好！
+We hope this email finds you well.
 
-我们计划对以下房屋进行检查：
+My name is Jabin, and I will be conducting the ${inspectionText} of your property on behalf of ST International Ltd.
 
-地址：${task.address}
-检查类型：${getInspectionTypeText(task.inspection_type)}
-计划时间：${scheduledTime}
+We are planning to inspect the following property:
 
-${task.notes ? `\n备注：${task.notes}\n` : ''}
+Address: ${task.address}
+${task.notes ? `Notes: ${task.notes}` : ''}
 
-如果您对检查时间有任何问题，请及时与我们联系。
+To arrange a suitable time for the inspection, which should take no longer than 15 minutes, could you please let us know what days and times work best for you in the coming days?
 
-谢谢！
-
+Kind regards,  
 ST International Ltd
-    `,
-        html: `
+    `.trim(),
+    html: `
 <div style="font-family: Arial, sans-serif; color: #333;">
-  <p>尊敬的业主：</p>
-  <p>您好！</p>
-  <p>我们计划对以下房屋进行检查：</p>
+  <p>Dear Tenants,</p>
+  <p>We hope this email finds you well.</p>
+  <p>My name is Jabin, and I will be conducting the <strong>${inspectionText}</strong> of your property on behalf of ST International Ltd.</p>
+  <p>We are planning to inspect the following property:</p>
   <div style="margin: 20px 0; padding: 15px; background-color: #f5f5f5; border-radius: 5px;">
-    <p><strong>地址：</strong>${task.address}</p>
-    <p><strong>检查类型：</strong>${getInspectionTypeText(task.inspection_type)}</p>
-    <p><strong>计划时间：</strong>${scheduledTime}</p>
-    ${task.notes ? `<p><strong>备注：</strong>${task.notes}</p>` : ''}
+    <p><strong>Address:</strong> ${task.address}</p>
+    ${task.notes ? `<p><strong>Notes:</strong> ${task.notes}</p>` : ''}
   </div>
-  <p>如果您对检查时间有任何问题，请及时与我们联系。</p>
-  <p>谢谢！</p>
-  <p style="color: #666; margin-top: 30px;">ST International Ltd</p>
+  <p>To arrange a suitable time for the inspection, which should take no longer than 15 minutes, could you please let us know what days and times work best for you in the coming days?</p>
+  <p style="margin-top: 30px;">Kind regards,<br/>ST International Ltd</p>
 </div>
-    `
-    };
+    `.trim()
+  };
 };
 
 // 发送邮件
 export const sendEmail = async (task: InspectionTask): Promise<boolean> => {
-    if (!task.email) {
-        throw new Error('收件人邮箱地址未设置');
-    }
+  if (!task.email) {
+    throw new Error('Recipient email is not set');
+  }
 
-    const { subject, text, html } = generateEmailContent(task);
+  const { subject, text, html } = generateEmailContent(task);
 
-    try {
-        await transporter.sendMail({
-            from: {
-                name: 'ST International',
-                address: process.env.EMAIL_USER as string
-            },
-            to: task.email,
-            subject,
-            text,
-            html
-        });
-        return true;
-    } catch (error) {
-        console.error('发送邮件失败:', error);
-        throw error;
-    }
-}; 
+  try {
+    await transporter.sendMail({
+      from: {
+        name: 'ST International',
+        address: process.env.EMAIL_USER as string
+      },
+      to: task.email,
+      subject,
+      text,
+      html
+    });
+    return true;
+  } catch (error) {
+    console.error('Failed to send email:', error);
+    throw error;
+  }
+};

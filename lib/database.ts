@@ -1,4 +1,4 @@
-import { connectToDatabase } from './mongodb';
+import dbConnect from './mongodb';
 import InspectionTask, {
     IInspectionTask,
     InspectionTask as InspectionTaskType,
@@ -7,6 +7,14 @@ import InspectionTask, {
 } from './models/InspectionTask';
 import Property from './models/Property';
 import { v4 as uuidv4 } from 'uuid';
+import mongoose from 'mongoose';
+
+export { dbConnect };
+
+// 检查连接状态的工具函数
+export function isConnected() {
+    return mongoose.connection.readyState === 1;
+}
 
 // 获取所有检查任务（按时间排序）
 export async function getInspectionTasks(): Promise<InspectionTaskType[]> {

@@ -1,3 +1,5 @@
+'use client';
+
 import { AntdRegistry } from '@ant-design/nextjs-registry';
 import { ConfigProvider } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
@@ -18,10 +20,19 @@ export default function RootLayout({
               token: {
                 fontFamily: 'system-ui, -apple-system, sans-serif',
               },
+              components: {
+                Table: {
+                  borderRadius: 4,
+                  padding: 8,
+                },
+                Button: {
+                  borderRadius: 4,
+                },
+              },
             }}
           >
             <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
-        {children}
+              {children}
             </div>
           </ConfigProvider>
         </AntdRegistry>

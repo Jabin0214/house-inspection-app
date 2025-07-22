@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Table, Button, message, Space, Typography, DatePicker, Select, Popconfirm } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -16,7 +16,7 @@ export default function HistoryPage() {
     const [loading, setLoading] = useState(true);
     const [editingCell, setEditingCell] = useState('');
 
-    const loadTasks = async () => {
+    const loadTasks = useCallback(async () => {
         try {
             setLoading(true);
             const response = await fetch('/api/tasks/completed');
@@ -25,14 +25,14 @@ export default function HistoryPage() {
             if (result.success) {
                 setTasks(result.data);
             } else {
-                message.error('加载数据失败: ' + result.error);
+                throw new Error(result.error);
             }
         } catch (error) {
-            message.error('网络请求失败');
+            message.error('加载数据失败: ' + (error instanceof Error ? error.message : '未知错误'));
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     const handleDelete = async (id: string) => {
         try {
@@ -53,7 +53,7 @@ export default function HistoryPage() {
 
     useEffect(() => {
         loadTasks();
-    }, []);
+    }, [loadTasks]);
 
     const updateTask = async (id: string, field: string, value: any) => {
         try {

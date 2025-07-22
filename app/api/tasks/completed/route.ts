@@ -1,19 +1,19 @@
 import { NextResponse } from 'next/server';
-import { getCompletedTasks } from '../../../../lib/database';
+import { dbConnect } from '@/lib/database';
+import InspectionTask from '@/lib/models/InspectionTask';
 
 export async function GET() {
     try {
-        const tasks = await getCompletedTasks();
-        return NextResponse.json({
-            success: true,
-            data: tasks
-        });
-    } catch (error: any) {
+        await dbConnect();
+        const tasks = await InspectionTask.find({ status: '完成' })
+            .sort({ updatedAt: -1 })
+            .exec();
+
+        return NextResponse.json({ success: true, data: tasks });
+    } catch (error) {
+        console.error('获取历史记录失败:', error);
         return NextResponse.json(
-            {
-                success: false,
-                error: error.message || '获取已完成任务失败'
-            },
+            { success: false, error: '获取历史记录失败' },
             { status: 500 }
         );
     }

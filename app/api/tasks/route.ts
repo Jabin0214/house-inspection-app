@@ -1,39 +1,32 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getInspectionTasks, addInspectionTask } from '../../../lib/database';
+import { NextResponse } from 'next/server';
+import { dbConnect } from '@/lib/database';
+import InspectionTask from '@/lib/models/InspectionTask';
 
 export async function GET() {
     try {
-        const tasks = await getInspectionTasks();
-        return NextResponse.json({
-            success: true,
-            data: tasks
-        });
-    } catch (error: any) {
+        await dbConnect();
+        const tasks = await InspectionTask.find().sort({ createdAt: -1 });
+        return NextResponse.json({ success: true, data: tasks });
+    } catch (error) {
+        console.error('获取任务列表失败:', error);
         return NextResponse.json(
-            {
-                success: false,
-                error: error.message || '获取任务失败'
-            },
+            { success: false, error: '获取任务列表失败' },
             { status: 500 }
         );
     }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
     try {
-        const taskData = await request.json();
-        const newTask = await addInspectionTask(taskData);
-
-        return NextResponse.json({
-            success: true,
-            data: newTask
-        });
-    } catch (error: any) {
+        await dbConnect();
+        const data = await request.json();
+        const task = new InspectionTask(data);
+        await task.save();
+        return NextResponse.json({ success: true, data: task });
+    } catch (error) {
+        console.error('创建任务失败:', error);
         return NextResponse.json(
-            {
-                success: false,
-                error: error.message || '添加任务失败'
-            },
+            { success: false, error: '创建任务失败' },
             { status: 500 }
         );
     }

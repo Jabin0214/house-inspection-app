@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Table, Button, message, Tag, Space, Typography, Input, Modal, DatePicker, Select, Dropdown, Popconfirm } from 'antd';
 import { PlusOutlined, EditOutlined, MoreOutlined, DeleteOutlined, MailOutlined, SendOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -21,7 +21,7 @@ export default function HomePage() {
   const [currentNotes, setCurrentNotes] = useState('');
   const [editingTaskId, setEditingTaskId] = useState('');
 
-  const loadTasks = async () => {
+  const loadTasks = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch('/api/tasks');
@@ -37,7 +37,24 @@ export default function HomePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  const loadAddressOptions = useCallback(async () => {
+    try {
+      const response = await fetch('/api/properties');
+      const data = await response.json();
+      if (data.success) {
+        setAddressOptions(data.data);
+      }
+    } catch (error) {
+      console.error('加载地址选项失败:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadTasks();
+    loadAddressOptions();
+  }, [loadTasks, loadAddressOptions]);
 
   const handleDelete = async (id: string) => {
     try {
@@ -55,15 +72,6 @@ export default function HomePage() {
       message.error('网络错误');
     }
   };
-
-  useEffect(() => {
-    loadTasks();
-    fetch('/api/properties')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) setAddressOptions(data.data);
-      });
-  }, []);
 
   const handleNotesEdit = (task: InspectionTask) => {
     setCurrentNotes(task.notes || '');
@@ -161,17 +169,15 @@ ${task.notes ? `\n备注：${task.notes}` : ''}
 ST International Ltd
     `.trim();
 
-    const mailtoLink = `mailto:${task.email}?subject=${encodeURIComponent(`房屋检查通知 - ${task.address}`)}&body=${encodeURIComponent(emailBody)}`;
-
-    // 打开邮件客户端
-    window.location.href = mailtoLink;
-
-    // 更新状态为已发邮件
     try {
+      const mailtoLink = `mailto:${task.email}?subject=${encodeURIComponent(`房屋检查通知 - ${task.address}`)}&body=${encodeURIComponent(emailBody)}`;
+      window.location.href = mailtoLink;
+
       await updateTask(task.id, 'status', '已发邮件');
       message.success('邮件窗口已打开，请在邮件客户端中发送邮件');
     } catch (error) {
-      message.error('状态更新失败');
+      message.error('操作失败，请重试');
+      console.error('邮件发送失败:', error);
     }
   };
 
@@ -182,6 +188,7 @@ ST International Ltd
     }
 
     try {
+      setLoading(true);
       const response = await fetch('/api/tasks/send-email', {
         method: 'POST',
         headers: {
@@ -194,13 +201,15 @@ ST International Ltd
 
       if (result.success) {
         message.success('邮件发送成功');
-        // 自动更新状态为"已发邮件"
         await updateTask(task.id, 'status', '已发邮件');
       } else {
-        message.error(result.error || '邮件发送失败');
+        throw new Error(result.error || '邮件发送失败');
       }
     } catch (error) {
-      message.error('邮件发送失败');
+      message.error(error instanceof Error ? error.message : '邮件发送失败');
+      console.error('邮件发送失败:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
