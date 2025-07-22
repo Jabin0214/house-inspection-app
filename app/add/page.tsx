@@ -99,15 +99,18 @@ export default function AddPage() {
                         <Select
                             showSearch
                             placeholder="请选择物业地址"
-                            filterOption={(input, option) =>
-                                (option?.label as string).toLowerCase().includes(input.toLowerCase())
-                            }
+                            optionFilterProp="children"
+                            filterOption={(input, option) => {
+                                if (!option?.value) return false;
+                                return option.value.toString().toLowerCase().includes(input.toLowerCase());
+                            }}
                             disabled={addressOptions.length === 0}
+                            allowClear
                         >
                             {addressOptions.map(addr => (
                                 <Option key={addr} value={addr}>{addr}</Option>
                             ))}
-                        </Select>   
+                        </Select>
                     </Form.Item>
 
                     <Form.Item
