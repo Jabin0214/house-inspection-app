@@ -7,8 +7,25 @@ if (!MONGODB_URI) {
     throw new Error('请在 .env.local 文件中定义 MONGODB_URI 环境变量');
 }
 
+// 验证连接字符串格式
+if (!MONGODB_URI.startsWith('mongodb://') && !MONGODB_URI.startsWith('mongodb+srv://')) {
+    console.error('MongoDB 连接字符串格式错误:', {
+        uri: MONGODB_URI.replace(/\/\/.*@/, '//***:***@'),
+        startsWith: {
+            mongodb: MONGODB_URI.startsWith('mongodb://'),
+            mongodbSrv: MONGODB_URI.startsWith('mongodb+srv://')
+        }
+    });
+    throw new Error('MongoDB 连接字符串必须以 "mongodb://" 或 "mongodb+srv://" 开头');
+}
+
 // 打印脱敏的连接字符串用于调试
-console.log('MongoDB 连接字符串格式检查:', MONGODB_URI.replace(/\/\/.*@/, '//***:***@'));
+console.log('MongoDB 连接字符串格式检查:', {
+    uri: MONGODB_URI.replace(/\/\/.*@/, '//***:***@'),
+    hasCredentials: MONGODB_URI.includes('@'),
+    hasDatabase: MONGODB_URI.split('/').length > 3,
+    environment: process.env.NODE_ENV || 'development'
+});
 
 interface MongooseCache {
     conn: typeof mongoose | null;

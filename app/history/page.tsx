@@ -20,15 +20,19 @@ export default function HistoryPage() {
         try {
             setLoading(true);
             const response = await fetch('/api/tasks/completed');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
             const result = await response.json();
 
             if (result.success) {
                 setTasks(result.data);
             } else {
-                throw new Error(result.error);
+                throw new Error(result.error || '加载数据失败');
             }
         } catch (error) {
-            message.error('加载数据失败: ' + (error instanceof Error ? error.message : '未知错误'));
+            console.error('加载历史记录失败:', error);
+            message.error(error instanceof Error ? error.message : '加载数据失败');
         } finally {
             setLoading(false);
         }
@@ -39,15 +43,19 @@ export default function HistoryPage() {
             const res = await fetch(`/api/tasks/${id}`, {
                 method: 'DELETE',
             });
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
             const result = await res.json();
             if (result.success) {
                 message.success('删除成功');
-                loadTasks();
+                setTasks(prev => prev.filter(task => task.id !== id));
             } else {
-                message.error('删除失败: ' + result.error);
+                throw new Error(result.error || '删除失败');
             }
-        } catch (err) {
-            message.error('网络错误');
+        } catch (error) {
+            console.error('删除记录失败:', error);
+            message.error(error instanceof Error ? error.message : '删除失败');
         }
     };
 
@@ -62,6 +70,7 @@ export default function HistoryPage() {
                 setEditingCell('');
                 return;
             }
+
             const updateData = { [field]: value };
             const response = await fetch(`/api/tasks/${id}`, {
                 method: 'PUT',
@@ -70,20 +79,26 @@ export default function HistoryPage() {
                 },
                 body: JSON.stringify(updateData)
             });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
             const result = await response.json();
             if (result.success) {
                 message.success('更新成功');
-                if (value !== '完成') {
+                if (field === 'status' && value !== '完成') {
                     // 如果状态改为非完成，则从历史记录中移除
-                    loadTasks();
+                    setTasks(prev => prev.filter(task => task.id !== id));
                 } else {
                     setTasks(prev => prev.map(t => t.id === id ? { ...t, [field]: value } : t));
                 }
             } else {
-                message.error('更新失败: ' + result.error);
+                throw new Error(result.error || '更新失败');
             }
         } catch (error) {
-            message.error('保存失败');
+            console.error('更新记录失败:', error);
+            message.error(error instanceof Error ? error.message : '更新失败');
         } finally {
             setEditingCell('');
         }

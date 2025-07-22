@@ -12,6 +12,20 @@ const { Title } = Typography;
 const { TextArea } = Input;
 const { Option } = Select;
 
+// 将状态常量移到组件外部
+const STATUS_ORDER = [
+  '需约时间',
+  '已发邮件',
+  '等待检查',
+  '完成'
+] as const;
+
+const ACTIVE_STATUS_ORDER = [
+  '需约时间',
+  '已发邮件',
+  '等待检查'
+] as const;
+
 export default function HomePage() {
   const [tasks, setTasks] = useState<InspectionTask[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +39,9 @@ export default function HomePage() {
     try {
       setLoading(true);
       const response = await fetch('/api/tasks');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const result = await response.json();
 
       if (result.success) {
@@ -33,7 +50,8 @@ export default function HomePage() {
         message.error('加载数据失败: ' + result.error);
       }
     } catch (error) {
-      message.error('网络请求失败');
+      console.error('加载任务列表失败:', error);
+      message.error(error instanceof Error ? `加载失败: ${error.message}` : '网络请求失败');
     } finally {
       setLoading(false);
     }
@@ -586,20 +604,9 @@ ST International Ltd
     }
   ];
 
-  // 按状态分组顺序
-  const statusOrder = [
-    '需约时间',
-    '已发邮件',
-    '等待检查',
-    '完成'
-  ];
-
-  // 首页显示的状态（不包括已完成的任务）
-  const activeStatusOrder = [
-    '需约时间',
-    '已发邮件',
-    '等待检查'
-  ];
+  // 使用外部常量替换内部定义
+  const statusOrder = STATUS_ORDER;
+  const activeStatusOrder = ACTIVE_STATUS_ORDER;
 
   // 按状态分组并组内排序
   const groupedTasks = activeStatusOrder.map(status => ({

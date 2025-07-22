@@ -13,24 +13,59 @@ const { Option } = Select;
 export default function AddPage() {
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
+    const [addressLoading, setAddressLoading] = useState(true);
     const [addressOptions, setAddressOptions] = useState<string[]>([]);
     const router = useRouter();
 
     useEffect(() => {
         // 获取所有property地址
-        fetch('/api/properties')
-            .then(res => res.json())
-            .then(data => {
+        const loadAddresses = async () => {
+            try {
+                setAddressLoading(true);
+                const response = await fetch('/api/properties');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
                 if (data.success) {
                     const addresses = data.data.map((addr: string) => addr);
                     setAddressOptions(addresses);
+                } else {
+                    throw new Error(data.error || '加载地址列表失败');
                 }
-            })
-            .catch(error => {
+            } catch (error) {
                 console.error('加载地址列表失败:', error);
-                message.error('加载地址列表失败');
-            });
+                message.error(error instanceof Error ? error.message : '加载地址列表失败');
+            } finally {
+                setAddressLoading(false);
+            }
+        };
+
+        loadAddresses();
     }, []);
+
+    const validateEmail = (_: any, value: string) => {
+        if (!value) {
+            return Promise.resolve();
+        }
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!emailRegex.test(value)) {
+            return Promise.reject('请输入有效的邮箱地址');
+        }
+        return Promise.resolve();
+    };
+
+    const validatePhone = (_: any, value: string) => {
+        if (!value) {
+            return Promise.resolve();
+        }
+        // 支持国内手机号和座机号
+        const phoneRegex = /^((\+86|0086)?\s?)?(1[3-9]\d{9}|(\d{3,4}-)?\d{7,8})$/;
+        if (!phoneRegex.test(value)) {
+            return Promise.reject('请输入有效的电话号码');
+        }
+        return Promise.resolve();
+    };
 
     const onFinish = async (values: any) => {
         setLoading(true);
@@ -98,14 +133,15 @@ export default function AddPage() {
                     >
                         <Select
                             showSearch
-                            placeholder="请选择物业地址"
+                            placeholder={addressLoading ? "加载中..." : "请选择物业地址"}
                             optionFilterProp="children"
                             filterOption={(input, option) => {
                                 if (!option?.value) return false;
                                 return option.value.toString().toLowerCase().includes(input.toLowerCase());
                             }}
-                            disabled={addressOptions.length === 0}
+                            disabled={addressLoading || addressOptions.length === 0}
                             allowClear
+                            loading={addressLoading}
                         >
                             {addressOptions.map(addr => (
                                 <Option key={addr} value={addr}>{addr}</Option>
@@ -144,7 +180,8 @@ export default function AddPage() {
                     <Form.Item
                         label="联系电话"
                         name="phone"
-                        help="可以后续补充"
+                        rules={[{ validator: validatePhone }]}
+                        help="支持手机号和座机号"
                     >
                         <Input placeholder="请输入联系电话（可选）" />
                     </Form.Item>
@@ -152,10 +189,8 @@ export default function AddPage() {
                     <Form.Item
                         label="邮箱地址"
                         name="email"
-                        rules={[
-                            { type: 'email', message: '请输入有效的邮箱地址' }
-                        ]}
-                        help="可以后续补充"
+                        rules={[{ validator: validateEmail }]}
+                        help="用于发送检查通知"
                     >
                         <Input placeholder="请输入邮箱地址（可选）" />
                     </Form.Item>
@@ -168,7 +203,7 @@ export default function AddPage() {
                                 loading={loading}
                                 icon={<SaveOutlined />}
                                 size="large"
-                                disabled={addressOptions.length === 0}
+                                disabled={addressLoading || addressOptions.length === 0}
                             >
                                 保存安排
                             </Button>
